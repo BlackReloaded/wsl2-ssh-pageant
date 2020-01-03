@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/binary"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -24,12 +25,16 @@ const (
 	pageReadWrite      = 0x4
 	fileMapWrite       = 0x2
 
-	// Windows errors
-	errorSocketAlreadyInUse = 10048
-
 	// ssh-agent/Pageant constants
 	agentMaxMessageLength = 8192
 	agentCopyDataID       = 0x804e50ba
+)
+
+var (
+	verbose = flag.Bool("verbose", false, "Enable verbose logging")
+	logFile = flag.String("logfile", "wsl2-gpg-ssh.log", "Path to logfile")
+
+	failureMessage = [...]byte{0, 0, 0, 1, 5}
 )
 
 // copyDataStruct is used to pass data in the WM_COPYDATA message.
@@ -112,26 +117,30 @@ func queryPageant(buf []byte) (result []byte, err error) {
 	return
 }
 
-var failureMessage = [...]byte{0, 0, 0, 1, 5}
-
 func main() {
 	fixconsole.FixConsoleIfNeeded()
+	flag.Parse()
 
-	f, err := os.OpenFile("logfile", os.O_RDWR|os.O_CREATE, 0666)
-	if err != nil {
-		log.Fatalf("error opening file: %v", err)
+	if *verbose {
+		//Setting logput to file because we use stdout for communication
+		f, err := os.OpenFile(*logFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		if err != nil {
+			log.Fatalf("error opening file: %v", err)
+		}
+		defer f.Close()
+
+		log.SetOutput(f)
+		log.Println("Starting exe")
 	}
-	defer f.Close()
-
-	log.SetOutput(f)
-	log.Println("Starting exe")
 
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		lenBuf := make([]byte, 4)
 		_, err := io.ReadFull(reader, lenBuf)
 		if err != nil {
-			log.Printf("io.ReadFull length error '%s'", err)
+			if *verbose {
+				log.Printf("io.ReadFull length error '%s'", err)
+			}
 			return
 		}
 
@@ -140,7 +149,9 @@ func main() {
 		buf := make([]byte, len)
 		_, err = io.ReadFull(reader, buf)
 		if err != nil {
-			log.Printf("io.ReadFull data error '%s'", err)
+			if *verbose {
+				log.Printf("io.ReadFull data error '%s'", err)
+			}
 			return
 		}
 
@@ -148,13 +159,17 @@ func main() {
 		if err != nil {
 			// If for some reason talking to Pageant fails we fall back to
 			// sending an agent error to the client
-			log.Printf("Pageant query error '%s'", err)
+			if *verbose {
+				log.Printf("Pageant query error '%s'", err)
+			}
 			result = failureMessage[:]
 		}
 
 		_, err = os.Stdout.Write(result)
 		if err != nil {
-			log.Printf("net.Conn.Write error '%s'", err)
+			if *verbose {
+				log.Printf("net.Conn.Write error '%s'", err)
+			}
 			return
 		}
 	}
