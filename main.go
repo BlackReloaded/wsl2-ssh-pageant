@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/exec"
 	"reflect"
 	"sync"
 	"syscall"
@@ -56,6 +57,13 @@ func queryPageant(buf []byte) (result []byte, err error) {
 
 	hwnd := win.FindWindow(syscall.StringToUTF16Ptr("Pageant"), syscall.StringToUTF16Ptr("Pageant"))
 
+	// Launch gpg-connect-agent
+	if hwnd == 0 {
+		log.Println("launching gpg-connect-agent")
+		exec.Command("gpg-connect-agent", "/bye").Run()
+	}
+
+	hwnd = win.FindWindow(syscall.StringToUTF16Ptr("Pageant"), syscall.StringToUTF16Ptr("Pageant"))
 	if hwnd == 0 {
 		err = errors.New("Could not find Pageant window")
 		return
