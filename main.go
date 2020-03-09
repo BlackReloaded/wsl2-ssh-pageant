@@ -8,9 +8,12 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"reflect"
+	"strconv"
 	"sync"
 	"syscall"
 	"unsafe"
@@ -34,6 +37,7 @@ const (
 var (
 	verbose = flag.Bool("verbose", false, "Enable verbose logging")
 	logFile = flag.String("logfile", "wsl2-gpg-ssh.log", "Path to logfile")
+	gpg     = flag.String("gpg", "", "gpg mode")
 
 	failureMessage = [...]byte{0, 0, 0, 1, 5}
 )
@@ -141,6 +145,82 @@ func main() {
 		log.Println("Starting exe")
 	}
 
+	if *gpg != "" {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			log.Fatal("failed to find user home dir")
+		}
+		basePath := filepath.Join(homeDir, "AppData", "Roaming", "gnupg")
+		handleGPG(filepath.Join(basePath, *gpg))
+	} else {
+		handleSSH()
+	}
+
+}
+
+func handleGPG(path string) {
+	var port int
+	var nonce [16]byte
+
+	file, err := os.Open(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	reader := bufio.NewReader(file)
+	tmp, _, err := reader.ReadLine()
+	port, err = strconv.Atoi(string(tmp))
+	n, err := reader.Read(nonce[:])
+	if err != nil {
+		if *verbose {
+			log.Printf("Could not read port from gpg nonce: %v\n", err)
+		}
+		return
+	}
+
+	if n != 16 {
+		if *verbose {
+			log.Printf("Could not connet gpg: incorrect number of bytes for nonceRead incorrect number of bytes for nonce\n")
+		}
+		return
+	}
+
+	gpgConn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", port))
+	if err != nil {
+		if *verbose {
+			log.Printf("Could not connet gpg: %v\n", err)
+		}
+		return
+	}
+
+	_, err = gpgConn.Write(nonce[:])
+	if err != nil {
+		if *verbose {
+			log.Printf("Could not authenticate gpg: %v\n", err)
+		}
+		return
+	}
+
+	go func() {
+		_, err := io.Copy(gpgConn, os.Stdin)
+		if err != nil {
+			if *verbose {
+				log.Printf("Could not copy gpg data from assuan socket to socket: %v\n", err)
+			}
+			return
+		}
+	}()
+
+	_, err = io.Copy(os.Stdout, gpgConn)
+	if err != nil {
+		if *verbose {
+			log.Printf("Could not copy gpg data from socket to assuan socket: %v\n", err)
+		}
+		return
+	}
+}
+
+func handleSSH() {
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		lenBuf := make([]byte, 4)
