@@ -7,7 +7,7 @@ I use a Yubikey to store a GPG key pair and I like to use this key pair as my SS
 
 1. Run `sudo apt-get install socat`
 2. Download and Copy the `wsl2-ssh-pageant.exe` to your $HOME/.ssh directory
-3. Add the following to your `.bashrc` or `.zshrc` (for bash/zsh shell):
+3.a Add the following to your `.bashrc` or `.zshrc` (for bash/zsh shell):
 
 ### SSH
 ```
