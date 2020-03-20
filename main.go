@@ -14,7 +14,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"strconv"
-	"sync"
 	"syscall"
 	"unsafe"
 
@@ -51,8 +50,6 @@ type copyDataStruct struct {
 	lpData uintptr
 }
 
-var queryPageantMutex sync.Mutex
-
 func queryPageant(buf []byte) (result []byte, err error) {
 	if len(buf) > agentMaxMessageLength {
 		err = errors.New("Message too long")
@@ -73,21 +70,16 @@ func queryPageant(buf []byte) (result []byte, err error) {
 		return
 	}
 
-	// Typically you'd add thread ID here but thread ID isn't useful in Go
-	// We would need goroutine ID but Go hides this and provides no good way of
-	// accessing it, instead we serialise calls to queryPageant and treat it
-	// as not being goroutine safe
-	mapName := fmt.Sprintf("WSLPageantRequest")
-	queryPageantMutex.Lock()
+	// Adding process id in order to support parrallel requests.
+	requestName := "WSLPageantRequest" + strconv.Itoa(os.Getpid())
+	mapName := fmt.Sprintf(requestName)
 
 	fileMap, err := windows.CreateFileMapping(invalidHandleValue, nil, pageReadWrite, 0, agentMaxMessageLength, syscall.StringToUTF16Ptr(mapName))
 	if err != nil {
-		queryPageantMutex.Unlock()
 		return
 	}
 	defer func() {
 		windows.CloseHandle(fileMap)
-		queryPageantMutex.Unlock()
 	}()
 
 	sharedMemory, err := windows.MapViewOfFile(fileMap, fileMapWrite, 0, 0, 0)
