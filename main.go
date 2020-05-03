@@ -18,6 +18,7 @@ import (
 	"syscall"
 	"unsafe"
 
+	"github.com/Microsoft/go-winio"
 	"github.com/apenwarr/fixconsole"
 	"github.com/lxn/win"
 	"golang.org/x/sys/windows"
@@ -38,6 +39,7 @@ var (
 	verbose = flag.Bool("verbose", false, "Enable verbose logging")
 	logFile = flag.String("logfile", "wsl2-gpg-ssh.log", "Path to logfile")
 	gpg     = flag.String("gpg", "", "gpg mode")
+	ssh     = flag.String("ssh", "", "windows ssh mode")
 
 	failureMessage = [...]byte{0, 0, 0, 1, 5}
 )
@@ -152,10 +154,13 @@ func main() {
 		}
 		basePath := filepath.Join(homeDir, "AppData", "Roaming", "gnupg")
 		handleGPG(filepath.Join(basePath, *gpg))
-	} else {
-		handleSSH()
+		return
 	}
-
+	if *ssh != "" {
+		handlePipedSSH()
+		return
+	}
+	handleSSH()
 }
 
 func handleGPG(path string) {
@@ -217,6 +222,26 @@ func handleGPG(path string) {
 			log.Printf("Could not copy gpg data from socket to assuan socket: %v\n", err)
 		}
 		return
+	}
+}
+
+func handlePipedSSH() {
+	conn, err := winio.DialPipe(*ssh, nil)
+	if err != nil {
+		log.Printf("failed to dial ssh pipe at %s: %s\n", *ssh, err)
+		return
+	}
+	go func() {
+		_, err := io.Copy(os.Stdout, conn)
+		if err != nil && err != io.EOF {
+			log.Printf("failed to copy from pipe to stdout: %s\n", err)
+			os.Exit(1)
+		}
+	}()
+	_, err = io.Copy(conn, os.Stdin)
+	if err != nil && err != io.EOF {
+		log.Printf("failed to copy from stdin to pipe: %s\n", err)
+		os.Exit(1)
 	}
 }
 
