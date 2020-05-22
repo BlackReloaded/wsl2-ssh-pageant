@@ -10,29 +10,29 @@ I use a Yubikey to store a GPG key pair and I like to use this key pair as my SS
 3.a Add the following to your `.bashrc` or `.zshrc` (for bash/zsh shell):
 
 ### SSH
-```
+```bash
 export SSH_AUTH_SOCK=$HOME/.ssh/agent.sock
 ss -a | grep -q $SSH_AUTH_SOCK
 if [ $? -ne 0 ]; then
         rm -f $SSH_AUTH_SOCK
-        setsid nohup socat UNIX-LISTEN:$SSH_AUTH_SOCK,fork EXEC:$HOME/.ssh/wsl2-ssh-pageant.exe >/dev/null 2>&1 &
+        (setsid nohup socat UNIX-LISTEN:$SSH_AUTH_SOCK,fork EXEC:$HOME/.ssh/wsl2-ssh-pageant.exe >/dev/null 2>&1 &)
 fi
 ```
 
 ### GPG
-```
+```bash
 export GPG_AGENT_SOCK=$HOME/.gnupg/S.gpg-agent
 ss -a | grep -q $GPG_AGENT_SOCK
 if [ $? -ne 0 ]; then
         rm -rf $GPG_AGENT_SOCK
-        setsid nohup socat UNIX-LISTEN:$GPG_AGENT_SOCK,fork EXEC:"$HOME/.ssh/wsl2-ssh-pageant.exe --gpg S.gpg-agent" >/dev/null 2>&1 &
+        (setsid nohup socat UNIX-LISTEN:$GPG_AGENT_SOCK,fork EXEC:"$HOME/.ssh/wsl2-ssh-pageant.exe --gpg S.gpg-agent" >/dev/null 2>&1 &)
 fi
 ```
 
 3.b Add the following to your `config.fish` (for fish shell):
 
 ### SSH
-```
+```fish
 set -x SSH_AUTH_SOCK $HOME/.ssh/agent.sock
 ss -a | grep -q $SSH_AUTH_SOCK
 if [ $status != 0 ]
@@ -42,7 +42,7 @@ end
 ```
 
 ### GPG
-```
+```fish
 set -x GPG_AGENT_SOCK $HOME/.gnupg/S.gpg-agent
 ss -a | grep -q $GPG_AGENT_SOCK
 if [ $status != 0 ]
