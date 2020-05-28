@@ -6,8 +6,9 @@ I use a Yubikey to store a GPG key pair and I like to use this key pair as my SS
 ## How to use with WSL2
 
 1. Run `sudo apt-get install socat`
-2. Download and Copy the `wsl2-ssh-pageant.exe` to your $HOME/.ssh directory
-3.a Add the following to your `.bashrc` or `.zshrc` (for bash/zsh shell):
+2. Download and Copy the `wsl2-ssh-pageant.exe` to your `$HOME/.ssh` directory
+3. Set the executable bit on `wsl2-ssh-pageant.exe`: `chmod +x $HOME/.ssh/wsl2-ssh-pageant.exe`
+4. (a) Add the following to your `.bashrc` or `.zshrc` (for bash/zsh shell):
 
 ### SSH
 ```bash
@@ -29,7 +30,7 @@ if [ $? -ne 0 ]; then
 fi
 ```
 
-3.b Add the following to your `config.fish` (for fish shell):
+4. (b) Add the following to your `config.fish` (for fish shell):
 
 ### SSH
 ```fish
