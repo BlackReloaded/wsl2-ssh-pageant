@@ -52,6 +52,19 @@ if [ $status != 0 ]
 end
 ```
 
+## Troubleshooting
+
+### Smartcard is detected in Windows and WSL, but ssh-add -L returns error
+If this is the first time you using yubikey with windows with gpg4win, please follow the instructions in the link
+https://developers.yubico.com/PGP/SSH_authentication/Windows.html
+
+| Make sure ssh support is enabled in the `gpg-agent.conf` and restart `gpg-agent` with the following command
+
+```
+gpg-connect-agent killagent /bye
+gpg-connect-agent /bye
+```
+
 ## Credit
 
 Some of the code is copied from benpye's [wsl-ssh-pageant](https://github.com/benpye/wsl-ssh-pageant). This code shows how to communicate to pageant.
