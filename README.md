@@ -5,12 +5,17 @@ I use a Yubikey to store a GPG key pair and I like to use this key pair as my SS
 
 ## How to use with WSL2
 
-1. Run `sudo apt-get install socat`
-2. Download latest version from [release page](https://github.com/BlackReloaded/wsl2-ssh-pageant/releases/latest) and copy `wsl2-ssh-pageant.exe` to your `$HOME/.ssh` directory
-3. Set the executable bit on `wsl2-ssh-pageant.exe`: `chmod +x $HOME/.ssh/wsl2-ssh-pageant.exe`
-4. (a) Add the following to your `.bashrc` or `.zshrc` (for bash/zsh shell):
+### Prerequisite
+In order to use `wsl-ssh-pageant` you must have installed `socat` and `ss` on your machine. For e.g. on Ubuntu you can install these by: `sudo apt install socat iproute`.
 
-### SSH
+### Installation
+1. Download latest version from [release page](https://github.com/BlackReloaded/wsl2-ssh-pageant/releases/latest) and copy `wsl2-ssh-pageant.exe` to your `$HOME/.ssh` directory
+2. Set the executable bit on `wsl2-ssh-pageant.exe`: `chmod +x $HOME/.ssh/wsl2-ssh-pageant.exe`
+3. Add one of the following to your shell configuration (for e.g. `.bashrc`, `.zshrc` or `config.fish`). For advanced configurations consult the documentation of your shell.
+
+#### Bash/Zsh
+
+*SSH:*
 ```bash
 export SSH_AUTH_SOCK=$HOME/.ssh/agent.sock
 ss -a | grep -q $SSH_AUTH_SOCK
@@ -20,7 +25,7 @@ if [ $? -ne 0 ]; then
 fi
 ```
 
-### GPG
+*GPG:*
 ```bash
 export GPG_AGENT_SOCK=$HOME/.gnupg/S.gpg-agent
 ss -a | grep -q $GPG_AGENT_SOCK
@@ -30,9 +35,9 @@ if [ $? -ne 0 ]; then
 fi
 ```
 
-4. (b) Add the following to your `config.fish` (for fish shell):
+#### Fish
 
-### SSH
+*SSH:*
 ```fish
 set -x SSH_AUTH_SOCK $HOME/.ssh/agent.sock
 ss -a | grep -q $SSH_AUTH_SOCK
@@ -42,7 +47,7 @@ if [ $status != 0 ]
 end
 ```
 
-### GPG
+*GPG:*
 ```fish
 set -x GPG_AGENT_SOCK $HOME/.gnupg/S.gpg-agent
 ss -a | grep -q $GPG_AGENT_SOCK
