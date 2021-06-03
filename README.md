@@ -6,32 +6,49 @@ I use a Yubikey to store a GPG key pair and I like to use this key pair as my SS
 ## How to use with WSL2
 
 ### Prerequisite
-In order to use `wsl-ssh-pageant` you must have installed `socat` and `ss` on your machine. For e.g. on Ubuntu you can install these by: `sudo apt install socat iproute`.
+In order to use `wsl-ssh-pageant` you must have installed `socat` and `ss` on your machine.
+
+For example, on Ubuntu you can install these by running: `sudo apt install socat iproute2`
 
 ### Installation
-1. Download latest version from [release page](https://github.com/BlackReloaded/wsl2-ssh-pageant/releases/latest) and copy `wsl2-ssh-pageant.exe` to your `$HOME/.ssh` directory
-2. Set the executable bit on `wsl2-ssh-pageant.exe`: `chmod +x $HOME/.ssh/wsl2-ssh-pageant.exe`
-3. Add one of the following to your shell configuration (for e.g. `.bashrc`, `.zshrc` or `config.fish`). For advanced configurations consult the documentation of your shell.
+1. Download latest version from [release page](https://github.com/BlackReloaded/wsl2-ssh-pageant/releases/latest) and copy `wsl2-ssh-pageant.exe` to your `$HOME/.ssh` directory or equivalent
+    ```bash
+    destination="$HOME/.ssh/wsl2-ssh-pageant.exe"
+    wget -O "$destination" "https://github.com/BlackReloaded/wsl2-ssh-pageant/releases/latest/download/wsl2-ssh-pageant.exe"
+    # Set the executable bit.
+    chmod +x "$destination"
+    ```
+2. Add one of the following to your shell configuration (for e.g. `.bashrc`, `.zshrc` or `config.fish`). For advanced configurations consult the documentation of your shell.
 
 #### Bash/Zsh
 
 *SSH:*
 ```bash
-export SSH_AUTH_SOCK=$HOME/.ssh/agent.sock
-ss -a | grep -q $SSH_AUTH_SOCK
-if [ $? -ne 0 ]; then
-        rm -f $SSH_AUTH_SOCK
-        (setsid nohup socat UNIX-LISTEN:$SSH_AUTH_SOCK,fork EXEC:$HOME/.ssh/wsl2-ssh-pageant.exe >/dev/null 2>&1 &)
+export SSH_AUTH_SOCK="$HOME/.ssh/agent.sock"
+if ! ss -a | grep -q "$SSH_AUTH_SOCK"; then
+  rm -f "$SSH_AUTH_SOCK"
+  wsl2_ssh_pageant_bin="$HOME/.ssh/wsl2-ssh-pageant.exe"
+  if [ -x "$wsl2_ssh_pageant_bin" ]; then
+    (setsid nohup socat UNIX-LISTEN:"$SSH_AUTH_SOCK,fork" EXEC:"$wsl2_ssh_pageant_bin" >/dev/null 2>&1 &)
+  else
+    echo >&2 "WARNING: $wsl2_ssh_pageant_bin is not executable."
+  fi
+  unset wsl2_ssh_pageant_bin
 fi
 ```
 
 *GPG:*
 ```bash
-export GPG_AGENT_SOCK=$HOME/.gnupg/S.gpg-agent
-ss -a | grep -q $GPG_AGENT_SOCK
-if [ $? -ne 0 ]; then
-        rm -rf $GPG_AGENT_SOCK
-        (setsid nohup socat UNIX-LISTEN:$GPG_AGENT_SOCK,fork EXEC:"$HOME/.ssh/wsl2-ssh-pageant.exe --gpg S.gpg-agent" >/dev/null 2>&1 &)
+export GPG_AGENT_SOCK="$HOME/.gnupg/S.gpg-agent"
+if ! ss -a | grep -q "$GPG_AGENT_SOCK"; then
+  rm -rf "$GPG_AGENT_SOCK"
+  wsl2_ssh_pageant_bin="$HOME/.ssh/wsl2-ssh-pageant.exe"
+  if [ -x "$wsl2_ssh_pageant_bin" ]; then
+    (setsid nohup socat UNIX-LISTEN:"$GPG_AGENT_SOCK,fork" EXEC:"$wsl2_ssh_pageant_bin --gpg S.gpg-agent" >/dev/null 2>&1 &)
+  else
+    echo >&2 "WARNING: $wsl2_ssh_pageant_bin is not executable."
+  fi
+  unset wsl2_ssh_pageant_bin
 fi
 ```
 
@@ -39,22 +56,32 @@ fi
 
 *SSH:*
 ```fish
-set -x SSH_AUTH_SOCK $HOME/.ssh/agent.sock
-ss -a | grep -q $SSH_AUTH_SOCK
-if [ $status != 0 ]
-  rm -f $SSH_AUTH_SOCK
-  setsid nohup socat UNIX-LISTEN:$SSH_AUTH_SOCK,fork EXEC:$HOME/.ssh/wsl2-ssh-pageant.exe >/dev/null 2>&1 &
-end
+set -x SSH_AUTH_SOCK "$HOME/.ssh/agent.sock"
+if ! ss -a | grep -q "$SSH_AUTH_SOCK"; then
+  rm -f "$SSH_AUTH_SOCK"
+  set wsl2_ssh_pageant_bin "$HOME/.ssh/wsl2-ssh-pageant.exe"
+  if [ -x "$wsl2_ssh_pageant_bin" ]; then
+    setsid nohup socat UNIX-LISTEN:"$SSH_AUTH_SOCK,fork" EXEC:"$wsl2_ssh_pageant_bin" >/dev/null 2>&1 &
+  else
+    echo >&2 "WARNING: $wsl2_ssh_pageant_bin is not executable."
+  end
+  set --erase wsl2_ssh_pageant_bin
+fi
 ```
 
 *GPG:*
 ```fish
-set -x GPG_AGENT_SOCK $HOME/.gnupg/S.gpg-agent
-ss -a | grep -q $GPG_AGENT_SOCK
-if [ $status != 0 ]
-  rm -rf $GPG_AGENT_SOCK
-  setsid nohup socat UNIX-LISTEN:$GPG_AGENT_SOCK,fork EXEC:"$HOME/.ssh/wsl2-ssh-pageant.exe --gpg S.gpg-agent" >/dev/null 2>&1 &
-end
+set -x GPG_AGENT_SOCK "$HOME/.gnupg/S.gpg-agent"
+if ! ss -a | grep -q "$GPG_AGENT_SOCK"; then
+  rm -rf "$GPG_AGENT_SOCK"
+  set wsl2_ssh_pageant_bin "$HOME/.ssh/wsl2-ssh-pageant.exe"
+  if [ -x "$wsl2_ssh_pageant_bin" ]; then
+    setsid nohup socat UNIX-LISTEN:"$GPG_AGENT_SOCK,fork" EXEC:"$wsl2_ssh_pageant_bin --gpg S.gpg-agent" >/dev/null 2>&1 &
+  else
+    echo >&2 "WARNING: $wsl2_ssh_pageant_bin is not executable."
+  end
+  set --erase wsl2_ssh_pageant_bin
+fi
 ```
 
 ## Troubleshooting
