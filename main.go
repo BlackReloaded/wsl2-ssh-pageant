@@ -35,10 +35,11 @@ const (
 )
 
 var (
-	verbose = flag.Bool("verbose", false, "Enable verbose logging")
-	logFile = flag.String("logfile", "wsl2-gpg-ssh.log", "Path to logfile")
-	gpg     = flag.String("gpg", "", "gpg mode")
-	ssh     = flag.String("ssh", "", "windows ssh mode")
+	verbose           = flag.Bool("verbose", false, "Enable verbose logging")
+	logFile           = flag.String("logfile", "wsl2-gpg-ssh.log", "Path to logfile")
+	gpg               = flag.String("gpg", "", "gpg mode")
+	gpgConfigBasepath = flag.String("gpgConfigBasepath", "", "gpg config path on windows")
+	ssh               = flag.String("ssh", "", "windows ssh mode")
 
 	failureMessage = [...]byte{0, 0, 0, 1, 5}
 )
@@ -144,7 +145,11 @@ func main() {
 		if err != nil {
 			log.Fatal("failed to find user home dir")
 		}
-		basePath := filepath.Join(homeDir, "AppData", "Roaming", "gnupg")
+		basePath := *gpgConfigBasepath
+		// fallback to default location if not specified
+		if basePath == "" {
+			basePath = filepath.Join(homeDir, "AppData", "Roaming", "gnupg")
+		}
 		handleGPG(filepath.Join(basePath, *gpg))
 		return
 	}
@@ -260,6 +265,7 @@ func handleSSH() {
 			return
 		}
 
+		log.Printf("Querying pageant")
 		result, err := queryPageant(append(lenBuf, buf...))
 		if err != nil {
 			// If for some reason talking to Pageant fails we fall back to
