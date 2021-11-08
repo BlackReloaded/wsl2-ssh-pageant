@@ -11,12 +11,15 @@ In order to use `wsl-ssh-pageant` you must have installed `socat` and `ss` on yo
 For example, on Ubuntu you can install these by running: `sudo apt install socat iproute2`
 
 ### Installation
-1. Download latest version from [release page](https://github.com/BlackReloaded/wsl2-ssh-pageant/releases/latest) and copy `wsl2-ssh-pageant.exe` to your `$HOME/.ssh` directory or equivalent
+1. Download latest version from [release page](https://github.com/BlackReloaded/wsl2-ssh-pageant/releases/latest) and copy `wsl2-ssh-pageant.exe` to your windows home directory (or other location within the windows file system). Then simlink to your `$HOME/.ssh` directory for easy access
     ```bash
-    destination="$HOME/.ssh/wsl2-ssh-pageant.exe"
-    wget -O "$destination" "https://github.com/BlackReloaded/wsl2-ssh-pageant/releases/latest/download/wsl2-ssh-pageant.exe"
+    windows_destination="/mnt/c/Users/Public/Downloads/wsl2-ssh-pageant.exe"
+    linux_destination="$HOME/.ssh/wsl2-ssh-pageant.exe"
+    wget -O "$windows_destination" "https://github.com/BlackReloaded/wsl2-ssh-pageant/releases/latest/download/wsl2-ssh-pageant.exe"
     # Set the executable bit.
-    chmod +x "$destination"
+    chmod +x "$windows_destination"
+    # Symlink to linux for ease of use later
+    ln -s $windows_destination $linux_destination
     ```
 2. Add one of the following to your shell configuration (for e.g. `.bashrc`, `.zshrc` or `config.fish`). For advanced configurations consult the documentation of your shell.
 
@@ -96,6 +99,9 @@ https://developers.yubico.com/PGP/SSH_authentication/Windows.html
 gpg-connect-agent killagent /bye
 gpg-connect-agent /bye
 ```
+
+### Agent response times are very slow
+If ssh,ssh-add,gpg etc are very slow (~15-25 seconds) check that wsl2-ssh-pageant resides on the windows file system. This is due to an issue with the WSL interop documented [here](https://github.com/BlackReloaded/wsl2-ssh-pageant/issues/24) and [here](https://github.com/microsoft/WSL/issues/7591)
 
 ## Credit
 
