@@ -28,6 +28,9 @@ For example, on Ubuntu you can install these by running: `sudo apt install socat
 *SSH:*
 ```bash
 export SSH_AUTH_SOCK="$HOME/.ssh/agent.sock"
+if ss -a | grep -q "$SSH_AUTH_SOCK" && [[ ! -f "$SSH_AUTH_SOCK" ]] ; then
+	kill $(pgrep -f "$SSH_AUTH_SOCK")
+fi
 if ! ss -a | grep -q "$SSH_AUTH_SOCK"; then
   rm -f "$SSH_AUTH_SOCK"
   wsl2_ssh_pageant_bin="$HOME/.ssh/wsl2-ssh-pageant.exe"
@@ -43,6 +46,9 @@ fi
 *GPG:*
 ```bash
 export GPG_AGENT_SOCK="$HOME/.gnupg/S.gpg-agent"
+if ss -a | grep -q "$GPG_AGENT_SOCK" && [[ ! -f "$GPG_AGENT_SOCK" ]] ; then
+	kill $(pgrep -f "$GPG_AGENT_SOCK")
+fi
 if ! ss -a | grep -q "$GPG_AGENT_SOCK"; then
   rm -rf "$GPG_AGENT_SOCK"
   wsl2_ssh_pageant_bin="$HOME/.ssh/wsl2-ssh-pageant.exe"
