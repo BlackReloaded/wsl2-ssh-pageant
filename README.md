@@ -1,4 +1,4 @@
-# wsl2-ssh-pageant
+# wsl2-ssh-pageant [![Go](https://github.com/davidshen84/wsl2-ssh-pageant/actions/workflows/go.yml/badge.svg)](https://github.com/davidshen84/wsl2-ssh-pageant/actions/workflows/go.yml)
 
 ## Motivation
 I use a Yubikey to store a GPG key pair and I like to use this key pair as my SSH key too. GPG on Windows exposes a Pageant style SSH agent and I wanted a way to use this key within WSL2.
@@ -23,6 +23,24 @@ For example, on Ubuntu you can install these by running: `sudo apt install socat
     ```
 2. Add one of the following to your shell configuration (for e.g. `.bashrc`, `.zshrc` or `config.fish`). For advanced configurations consult the documentation of your shell.
 
+### Usage
+
+Use `wsl2-ssh-peagent --help` to get available options. Example scripts have been provided for popular shell.
+
+- `--gpgConfigBase`: If you use **Gpg4Win** and installed with *Administrator* privilege, the `gnupg` folder will be at
+`%LOCALAPPDATA%`. In this case you need to use this option to provide the location of the `gnupg` folder in your Windows
+system. Note, you should use `/` in the path to avoid slash-escape complications. E.g. `--gpgConfigbase c:/Users/userA/AppData/Local/gnupg`
+
+#### Gpg [agent forward](https://wiki.gnupg.org/AgentForwarding)
+When working on the remote system through SSH, you may want to use the private key in your local Yubikey, e.g. decrypt a
+message or sign a git commit. This can be achieved using the steps on [this
+blog](https://mlohr.com/gpg-agent-forwarding/).
+
+1. Verify that `S.gpg-agent.extra` file exists in the `gnupg` folder in the Windows system.
+1. On your local system, update the `~/.ssh/config` file, add the `RemoteForward` option.
+1. On the remote system, update the `/etc/ssh/sshd_config` file, add the `StreamLocalBindUnlink` option.
+1. Restart the `sshd` service on the remote system.
+
 #### Bash/Zsh
 
 *SSH:*
@@ -43,11 +61,13 @@ fi
 *GPG:*
 ```bash
 export GPG_AGENT_SOCK="$HOME/.gnupg/S.gpg-agent"
+# export GPG_AGENT_EXTRA_SOCK="$HOME/.gnupg/S.gpg-agent.extra" # uncomment if you want to use agent forwarding
 if ! ss -a | grep -q "$GPG_AGENT_SOCK"; then
   rm -rf "$GPG_AGENT_SOCK"
   wsl2_ssh_pageant_bin="$HOME/.ssh/wsl2-ssh-pageant.exe"
   if test -x "$wsl2_ssh_pageant_bin"; then
     (setsid nohup socat UNIX-LISTEN:"$GPG_AGENT_SOCK,fork" EXEC:"$wsl2_ssh_pageant_bin --gpg S.gpg-agent" >/dev/null 2>&1 &)
+    # (setsid nohup socat UNIX-LISTEN:"$GPG_AGENT_EXTRA_SOCK,fork" EXEC:"$wsl2_ssh_pageant_bin --gpg S.gpg-agent.extra" >/dev/null 2>&1 &)
   else
     echo >&2 "WARNING: $wsl2_ssh_pageant_bin is not executable."
   fi
@@ -75,11 +95,13 @@ end
 *GPG:*
 ```fish
 set -x GPG_AGENT_SOCK "$HOME/.gnupg/S.gpg-agent"
+# set -x GPG_AGENT_EXTRA_SOCK "$HOME/.gnupg/S.gpg-agent.extra" # uncomment if you want to use agent forwarding
 if not ss -a | grep -q "$GPG_AGENT_SOCK";
   rm -rf "$GPG_AGENT_SOCK"
   set wsl2_ssh_pageant_bin "$HOME/.ssh/wsl2-ssh-pageant.exe"
   if test -x "$wsl2_ssh_pageant_bin";
     setsid nohup socat UNIX-LISTEN:"$GPG_AGENT_SOCK,fork" EXEC:"$wsl2_ssh_pageant_bin --gpg S.gpg-agent" >/dev/null 2>&1 &
+    # setsid nohup socat UNIX-LISTEN:"$GPG_AGENT_EXTRA_SOCK,fork" EXEC:"$wsl2_ssh_pageant_bin --gpg S.gpg-agent.extra" >/dev/null 2>&1 &
   else
     echo >&2 "WARNING: $wsl2_ssh_pageant_bin is not executable."
   end
