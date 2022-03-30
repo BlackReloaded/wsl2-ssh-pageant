@@ -8,19 +8,21 @@ jobs:
     steps:
 
     - name: Set up Go 1.16
-      uses: actions/setup-go@v1
+      uses: actions/setup-go@v3
       with:
         go-version: 1.16
       id: go
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v1
+      uses: actions/checkout@v3
 
     - name: Build
-      run: make build
+      env:
+        GOOS: windows
+      run: go build -o wsl2-ssh-pageant.exe
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v1.0.0
+      uses: actions/upload-artifact@v3
       with:
         # Artifact name
         name: wsl2-ssh-pageant.exe

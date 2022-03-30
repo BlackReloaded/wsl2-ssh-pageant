@@ -141,15 +141,16 @@ func main() {
 	}
 
 	if *gpg != "" {
-		homeDir, err := os.UserHomeDir()
+		configDir, err := os.UserConfigDir()
 		if err != nil {
-			log.Fatal("failed to find user home dir")
+			log.Fatal("failed to find user config dir")
 		}
 		basePath := *gpgConfigBasepath
 		// fallback to default location if not specified
 		if basePath == "" {
-			basePath = filepath.Join(homeDir, "AppData", "Roaming", "gnupg")
+			basePath = filepath.Join(configDir, "gnupg")
 		}
+
 		handleGPG(filepath.Join(basePath, *gpg))
 		return
 	}
@@ -194,6 +195,13 @@ func handleGPG(path string) {
 		}
 		return
 	}
+
+	defer func(gpgConn net.Conn) {
+		err := gpgConn.Close()
+		if err != nil && *verbose {
+			log.Printf("There's an error when closing the gpg connection: %v\n", err)
+		}
+	}(gpgConn)
 
 	_, err = gpgConn.Write(nonce[:])
 	if err != nil {
