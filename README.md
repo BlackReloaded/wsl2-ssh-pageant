@@ -16,13 +16,12 @@ For example, on Ubuntu you can install these by running: `sudo apt install socat
 ### Installation
 1. Download latest version from [release page](https://github.com/BlackReloaded/wsl2-ssh-pageant/releases/latest) and copy `wsl2-ssh-pageant.exe` to your windows home directory (or other location within the windows file system). Then simlink to your `$HOME/.ssh` directory for easy access
     ```bash
-    windows_destination="/mnt/c/Users/Public/Downloads/wsl2-ssh-pageant.exe"
     linux_destination="$HOME/.ssh/wsl2-ssh-pageant.exe"
-    wget -O "$windows_destination" "https://github.com/BlackReloaded/wsl2-ssh-pageant/releases/latest/download/wsl2-ssh-pageant.exe"
+    wget -O "$linux_destination" "https://github.com/BlackReloaded/wsl2-ssh-pageant/releases/latest/download/wsl2-ssh-pageant.exe"
     # Set the executable bit.
-    chmod +x "$windows_destination"
-    # Symlink to linux for ease of use later
-    ln -s $windows_destination $linux_destination
+    chmod +x "$linux_destination"
+    [[ $(dpkg-query -l | grep socat | awk '{print $1}') != "ii" ]] && sudo apt install socat
+    [[ $(dpkg-query -l | grep iproute2 | awk '{print $1}') != "ii" ]] && sudo apt install iproute2
     ```
 2. Add one of the following to your shell configuration (for e.g. `.bashrc`, `.zshrc` or `config.fish`). For advanced configurations consult the documentation of your shell.
 
@@ -31,6 +30,9 @@ For example, on Ubuntu you can install these by running: `sudo apt install socat
 *SSH:*
 ```bash
 export SSH_AUTH_SOCK="$HOME/.ssh/agent.sock"
+if ss -a | grep -q "$SSH_AUTH_SOCK" && [[ ! -f "$SSH_AUTH_SOCK" ]] ; then
+	kill $(pgrep -f "$SSH_AUTH_SOCK")
+fi
 if ! ss -a | grep -q "$SSH_AUTH_SOCK"; then
   rm -f "$SSH_AUTH_SOCK"
   wsl2_ssh_pageant_bin="$HOME/.ssh/wsl2-ssh-pageant.exe"
@@ -46,6 +48,9 @@ fi
 *GPG:*
 ```bash
 export GPG_AGENT_SOCK="$HOME/.gnupg/S.gpg-agent"
+if ss -a | grep -q "$GPG_AGENT_SOCK" && [[ ! -f "$GPG_AGENT_SOCK" ]] ; then
+	kill $(pgrep -f "$GPG_AGENT_SOCK")
+fi
 if ! ss -a | grep -q "$GPG_AGENT_SOCK"; then
   rm -rf "$GPG_AGENT_SOCK"
   wsl2_ssh_pageant_bin="$HOME/.ssh/wsl2-ssh-pageant.exe"
